@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Configuración del libro</title>
-
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -11,13 +10,11 @@
         margin: 0;
         padding: 20px;
     }
-
     h2 {
         text-align: center;
         color: #333;
         margin-bottom: 20px;
     }
-
     form {
         background: #fff;
         padding: 25px;
@@ -26,14 +23,12 @@
         max-width: 600px;
         margin: 0 auto;
     }
-
     label {
         display: block;
         margin-top: 15px;
         font-weight: 600;
         color: #555;
     }
-
     select, input[type="number"] {
         width: 100%;
         padding: 10px 12px;
@@ -43,47 +38,23 @@
         font-size: 14px;
         transition: 0.2s;
     }
-
     select:focus, input[type="number"]:focus {
         border-color: #007BFF;
         box-shadow: 0 0 5px rgba(0,123,255,0.3);
         outline: none;
     }
-
     input[type="checkbox"] {
         width: auto;
         margin-right: 8px;
         transform: scale(1.1);
     }
-
-    .hidden {
-        display: none;
-    }
-
-    .row {
-        display: flex;
-        gap: 10px;
-        margin-top: 5px;
-    }
-
-    .row input {
-        flex: 1;
-    }
-
-    #spineResult {
-        font-weight: bold;
-        margin-top: 5px;
-        color: #007BFF;
-    }
-
-    #spineWarning {
-        color: #d9534f;
-        font-weight: 600;
-        margin-top: 5px;
-    }
+    .hidden { display: none; }
+    .row { display: flex; gap: 10px; margin-top: 5px; }
+    .row input { flex: 1; }
+    #spineResult { font-weight: bold; margin-top: 5px; color: #007BFF; }
+    #spineWarning { color: #d9534f; font-weight: 600; margin-top: 5px; }
 </style>
 </head>
-
 <body>
 
 <h2>Configuración del libro</h2>
@@ -126,7 +97,7 @@
 
         <!-- Número de páginas -->
         <label for="pages">Número de páginas interiores</label>
-        <input type="number" id="pages" min="1" placeholder="Ej. 120">
+        <input type="number" id="pages" min="2" step="2" placeholder="Ej. 120">
 
         <!-- Inserción -->
         <label>
@@ -135,7 +106,6 @@
         </label>
 
         <div id="insertOptions" class="hidden">
-
             <label for="paperInsert">Papel de inserción</label>
             <select id="paperInsert">
                 <option value="">Seleccione papel de inserción</option>
@@ -157,95 +127,124 @@
 </form>
 
 <script>
-    const bindingType   = document.getElementById('bindingType');
-    const bindingOptions = document.getElementById('bindingOptions');
-    const paperCover    = document.getElementById('paperCover');
+const bindingType   = document.getElementById('bindingType');
+const bindingOptions = document.getElementById('bindingOptions');
+const paperCover    = document.getElementById('paperCover');
 
-    const finish        = document.getElementById('finish');
-    const paperInterior = document.getElementById('paperInterior');
-    const pagesInput    = document.getElementById('pages');
+const paperInterior = document.getElementById('paperInterior');
+const pagesInput    = document.getElementById('pages');
 
-    const hasInsert     = document.getElementById('hasInsert');
-    const insertOptions = document.getElementById('insertOptions');
-    const paperInsert   = document.getElementById('paperInsert');
+const hasInsert     = document.getElementById('hasInsert');
+const insertOptions = document.getElementById('insertOptions');
+const paperInsert   = document.getElementById('paperInsert');
+const pageFrom      = document.getElementById('pageFrom');
+const pageTo        = document.getElementById('pageTo');
 
-    const spineResult   = document.getElementById('spineResult');
-    const spineWarning  = document.getElementById('spineWarning');
+const spineResult   = document.getElementById('spineResult');
+const spineWarning  = document.getElementById('spineWarning');
 
-    const coverPapersBlanda = [
-        { value: 'estucado_250', label: 'Estucado mate 250 g' },
-        { value: 'estucado_300', label: 'Estucado mate 300 g' },
-        { value: 'cartulina_300', label: 'Cartulina gráfica 300 g' }
-    ];
+const coverPapersBlanda = [
+    { value: 'estucado_250', label: 'Estucado mate 250 g' },
+    { value: 'estucado_300', label: 'Estucado mate 300 g' },
+    { value: 'cartulina_300', label: 'Cartulina gráfica 300 g' }
+];
 
-    bindingType.addEventListener('change', () => {
-        bindingOptions.classList.toggle('hidden', !bindingType.value);
-        updateCoverPaper();
-        calculateSpine();
-    });
+// Tipo de encuadernado
+bindingType.addEventListener('change', () => {
+    bindingOptions.classList.toggle('hidden', !bindingType.value);
+    updateCoverPaper();
+    updateInsertPapers();
+    calculateSpine();
+});
 
-    hasInsert.addEventListener('change', () => {
-        insertOptions.classList.toggle('hidden', !hasInsert.checked);
-        updateInsertPapers();
-    });
+// Inserción
+hasInsert.addEventListener('change', () => {
+    insertOptions.classList.toggle('hidden', !hasInsert.checked);
+    updateInsertPapers();
+    calculateSpine();
+});
 
-    paperInterior.addEventListener('change', updateInsertPapers);
-    pagesInput.addEventListener('input', calculateSpine);
+// Papel interior
+paperInterior.addEventListener('change', updateInsertPapers);
+pagesInput.addEventListener('input', calculateSpine);
+pageFrom.addEventListener('input', calculateSpine);
+pageTo.addEventListener('input', calculateSpine);
 
-    function updateCoverPaper() {
-        paperCover.innerHTML = '';
-        paperCover.disabled = false;
-
-        if (bindingType.value === 'dura') {
-            paperCover.innerHTML = `<option value="estucado_170">Estucado mate 170 g</option>`;
-            paperCover.disabled = true;
-        } else if (bindingType.value === 'blanda') {
-            paperCover.innerHTML = `<option value="">Seleccione papel de cubierta</option>`;
-            coverPapersBlanda.forEach(paper => {
-                const option = document.createElement('option');
-                option.value = paper.value;
-                option.textContent = paper.label;
-                paperCover.appendChild(option);
-            });
-        }
-    }
-
-    function updateInsertPapers() {
-        paperInsert.innerHTML = '<option value="">Seleccione papel de inserción</option>';
-        const selectedInterior = paperInterior.value;
-
-        Array.from(paperInterior.options).forEach(option => {
-            if (option.value && option.value !== selectedInterior) {
-                paperInsert.appendChild(option.cloneNode(true));
-            }
+function updateCoverPaper() {
+    paperCover.innerHTML = '';
+    paperCover.disabled = false;
+    if (bindingType.value === 'dura') {
+        paperCover.innerHTML = `<option value="estucado_170">Estucado mate 170 g</option>`;
+        paperCover.disabled = true;
+    } else if (bindingType.value === 'blanda') {
+        paperCover.innerHTML = `<option value="">Seleccione papel de cubierta</option>`;
+        coverPapersBlanda.forEach(paper => {
+            const option = document.createElement('option');
+            option.value = paper.value;
+            option.textContent = paper.label;
+            paperCover.appendChild(option);
         });
     }
+}
 
-    function calculateSpine() {
-        const pages = parseInt(pagesInput.value, 10);
-        spineResult.textContent = '—';
-        spineWarning.textContent = '';
+function updateInsertPapers() {
+    paperInsert.innerHTML = '<option value="">Seleccione papel de inserción</option>';
+    const selectedInterior = paperInterior.value;
+    Array.from(paperInterior.options).forEach(option => {
+        if (option.value && option.value !== selectedInterior) {
+            paperInsert.appendChild(option.cloneNode(true));
+        }
+    });
+}
 
-        if (!pages || pages <= 0) return;
+function calculateSpine() {
+    const pages = parseInt(pagesInput.value, 10);
+    spineResult.textContent = '—';
+    spineWarning.textContent = '';
 
-        // Cálculo proporcional del lomo
-        let spineWidth = (pages / 500) * 60;
-        if (spineWidth < 4) spineWidth = 4;
-        if (spineWidth > 60) spineWidth = 60;
-        spineWidth = parseFloat(spineWidth.toFixed(1));
+    if (!pages || pages < 2) return;
 
-        spineResult.textContent = `${spineWidth} mm`;
+    // Validar libro par
+    if (pages % 2 !== 0) {
+        spineWarning.textContent = '⚠️ El número de páginas del libro debe ser par.';
+    }
 
-        if (pages < 10) {
-            spineWarning.textContent =
-                '⚠️ El número de páginas está por debajo de las especificaciones mínimas (4 mm de lomo).';
-        } else if (pages > 500) {
-            spineWarning.textContent =
-                '⚠️ El número de páginas supera las especificaciones máximas (60 mm de lomo).';
+    // Cálculo proporcional del lomo
+    let spineWidth = (pages / 500) * 60;
+    if (spineWidth < 4) spineWidth = 4;
+    if (spineWidth > 60) spineWidth = 60;
+    spineWidth = parseFloat(spineWidth.toFixed(1));
+    spineResult.textContent = `${spineWidth} mm`;
+
+    // Advertencias según número de páginas
+    if (pages < 10) {
+        spineWarning.textContent = '⚠️ El número de páginas está por debajo de las especificaciones mínimas (4 mm de lomo).';
+    } else if (pages > 500) {
+        spineWarning.textContent = '⚠️ El número de páginas supera las especificaciones máximas (60 mm de lomo).';
+    }
+
+    // Validar inserción
+    if (hasInsert.checked) {
+        const from = parseInt(pageFrom.value, 10);
+        const to = parseInt(pageTo.value, 10);
+
+        if (!from || !to) return;
+
+        if (from <= 1 && to >= pages) {
+            spineWarning.textContent = '⚠️ La inserción no puede cubrir todas las páginas del libro.';
+        }
+        if (from % 2 === 0) {
+            spineWarning.textContent = '⚠️ La inserción debe empezar en página impar.';
+        }
+        if (to % 2 !== 0) {
+            spineWarning.textContent = '⚠️ La inserción debe acabar en página par.';
+        }
+        if (from > pages || to > pages) {
+            spineWarning.textContent = '⚠️ La inserción no puede exceder el total de páginas del libro.';
         }
     }
+}
 </script>
 
 </body>
 </html>
-
